@@ -12,7 +12,7 @@
     },
     {
       "name": "datalinkLayer",
-      "description": "Взаимодействие с канальынм уровнем"
+      "description": "Взаимодействие с канальным уровнем"
     }
   ],
   "paths": {
@@ -151,15 +151,11 @@
       "Message": {
         "type": "object",
         "required": [
-          "username",
+          "user_id",
           "time_send",
           "data"
         ],
         "properties": {
-          "id": {
-            "type": "integer",
-            "example": 1
-          },
           "user_id": {
             "type": "integer",
             "example": 10
@@ -179,7 +175,6 @@
         "type": "object",
         "required": [
           "id",
-          "user_id",
           "seq_id",
           "data",
           "msg_len"
@@ -189,10 +184,6 @@
             "type": "string",
             "format": "date-time",
             "example": "2024-03-29T13:35:02+03:00"
-          },
-          "user_id": {
-            "type": "integer",
-            "example": 10
           },
           "seq_id": {
             "type": "integer",
