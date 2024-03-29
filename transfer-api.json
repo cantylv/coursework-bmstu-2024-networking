@@ -1,0 +1,213 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "API Транспортного уровня",
+    "description": "Описание хендлеров транспортного уровня по курсовой работе дисциплины \"Сетевые Технологии в АСОИУ\"",
+    "version": "1.0.1"
+  },
+  "tags": [
+    {
+      "name": "applicationLayer",
+      "description": "Взаимодействие с прикладным уровнем"
+    },
+    {
+      "name": "datalinkLayer",
+      "description": "Взаимодействие с канальынм уровнем"
+    }
+  ],
+  "paths": {
+    "/api/v1/new_message": {
+      "post": {
+        "tags": [
+          "applicationLayer"
+        ],
+        "summary": "Принимает сообщение от WS-сервера",
+        "description": "Принимает от WS-сервера сообщение, которое было отправлено пользователем в чат. В процессе выполнения хендлера проксируются на Канальный уровень сегменты сообщения, разбитые по 100 байт.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Message"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Сообщение успешно принято",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Переданы некорректные данные",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadCredentialsError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутрення ошибка сервера",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/segment": {
+      "post": {
+        "tags": [
+          "datalinkLayer"
+        ],
+        "summary": "Принимает сегменты сообщения от канального уровня",
+        "description": "При получении сегменты помещаются в очередь, раз в 2 секунды собираются в единое сообщение и передаются на прикладной уровень. Если часть из сегментов не была принята, то на прикладной уровень итоговое сообщение передается с признаком ошибки.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Segment"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Сегмент успешно принят",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Переданы некорректные данные",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadCredentialsError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутрення ошибка сервера",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "InternalServerError": {
+        "type": "object",
+        "properties": {
+          "detail": {
+            "type": "string",
+            "example": "Внутренняя ошибка сервера"
+          }
+        }
+      },
+      "BadCredentialsError": {
+        "type": "object",
+        "properties": {
+          "detail": {
+            "type": "string",
+            "example": "Переданы некорректные данные"
+          }
+        }
+      },
+      "SuccessBody": {
+        "type": "object",
+        "properties": {
+          "detail": {
+            "type": "string",
+            "example": "ОК"
+          }
+        }
+      },
+      "Message": {
+        "type": "object",
+        "required": [
+          "username",
+          "time_send",
+          "data"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "user_id": {
+            "type": "integer",
+            "example": 10
+          },
+          "data": {
+            "type": "string",
+            "example": "Что задали по СПО??"
+          },
+          "time_send": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2024-03-29T13:30:00+03:00"
+          }
+        }
+      },
+      "Segment": {
+        "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "seq_id",
+          "data",
+          "msg_len"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2024-03-29T13:35:02+03:00"
+          },
+          "user_id": {
+            "type": "integer",
+            "example": 10
+          },
+          "seq_id": {
+            "type": "integer",
+            "example": 4
+          },
+          "data": {
+            "type": "string",
+            "example": "VGhpcyBpcyBhIHN0cmluZyBiYXNlNjQgc3RyaW5nVGhpcyBpcyBhIHN0cmluZyBiYXNlNjQgc3RyaW5nVGhpcyBpcyBhIHN0cmluZyBiYXNlNjQgc3RyaW5nVGhpcyBpcyBhIHN0cmluZyBiYXNlNjQgc3RyaW5nVGhpcyBpcyBhIHN0cmluZyBiYXNlNjQgc3RyaW5nVGhpcyBpcyBhIHN0cmluZyBiYXNlNjQgc3RyaW5nVGhpcyBpcyBhIHN0cmluZyBiYXNlNjQgc3RyaW5n"
+          },
+          "msg_len": {
+            "type": "integer",
+            "example": 12
+          }
+        }
+      }
+    }
+  }
+}
