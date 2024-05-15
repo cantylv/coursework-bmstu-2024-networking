@@ -12,7 +12,7 @@
 
 ## Репозитории с другими уровнями модели ISO/OSI
 
-[Прикладной уровеь](https://github.com/DemiurgeRV) 
+[Прикладной уровеь](https://github.com/ssofiica/Network-Course-Work) 
 
-[Канальный уровеь](https://github.com/DemiurgeRV)
+[Канальный уровеь](https://github.com/DemiurgeRV/coursework-bmstu2024)
  
