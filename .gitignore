@@ -2,3 +2,5 @@
 .DS_Store
 
 config/config.yaml
+kafka_data
+server.go

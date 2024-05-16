@@ -10,6 +10,7 @@ type (
 		DataLink    `yaml:"datalink"`
 		Transfer    `yaml:"transfer"`
 		Application `yaml:"application"`
+		Kafka 		`yaml:"kafka"`
 	}
 
 	DataLink struct {
@@ -26,6 +27,13 @@ type (
 	Application struct {
 		Host string `yaml:"host"`
 		Port int 	`yaml:"port"`
+	}
+
+	Kafka struct {
+		Host  		  string `yaml:"host"`
+		Port  		  int 	 `yaml:"port"`
+		Topic 		  string `yaml:"topic"`
+		ConsumerGroup string `yaml:"consumer-group"`
 	}
 )
 
