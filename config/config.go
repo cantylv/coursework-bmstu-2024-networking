@@ -1,6 +1,8 @@
 package config
 
 import (
+	"time"
+
 	"github.com/ilyakaznacheev/cleanenv"
 	"go.uber.org/zap"
 )
@@ -20,13 +22,17 @@ type (
 	}
 
 	Transfer struct {
-		Host string `yaml:"host"`
-		Port int 	`yaml:"port"`
+		Host string 		    `yaml:"host"`
+		Port int 			    `yaml:"port"`
+		Timeout time.Duration   `yaml:"timeout"`
+		SegmentLength int 	    `yaml:"segment_length"`
+		MaxNumberOfAttempts int `yaml:"max_number_of_attempts"`
 	}
 
 	Application struct {
 		Host string `yaml:"host"`
 		Port int 	`yaml:"port"`
+		RequestUrl string `yaml:"request_url"`
 	}
 
 	Kafka struct {

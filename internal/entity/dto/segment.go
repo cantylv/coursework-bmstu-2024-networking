@@ -1,6 +1,14 @@
 package dto
 
-import "github.com/asaskevich/govalidator"
+import (
+	"time"
+
+	"github.com/asaskevich/govalidator"
+)
+
+const (
+	timestamptz = "2006-01-02 15:04:05+03:00"
+) 
 
 // DTOs related within DataLink Layer
 type SegmentToDatalinkLayer struct {
@@ -13,15 +21,26 @@ type SegmentToDatalinkLayer struct {
 }
 
 type SegmentFromDatalinkLayer struct {
-	Data []byte `json:"data" valid:"segment_data_domain"`
-	SegmentId uint64 `json:"segment_id" valid:"is_non_negative"`
+	Data []byte `json:"data" valid:"-"`
+	SegmentId uint64 `json:"segment_id" valid:"is_non_negative, optional"`
 	NumberOfSegments uint64 `json:"number_of_segments" valid:"is_non_negative"`
-	DateSend string `json:"date_send" valid:"date_domain"`
-	Login string `json:"login" valid:"login"`
+	DateSend string `json:"date_send" valid:"-"`
+	Login string `json:"login" valid:"login_domain"`
 	MessageId string `json:"message_id" valid:"uuidv4"`
 	Error bool `json:"error" valid:"-"`
 }
 
 func (d *SegmentFromDatalinkLayer) Validate() (bool, error) {
 	return govalidator.ValidateStruct(d)
+}
+
+func GetSegmentToDatalinkLayer(rawData []byte, numberOfSegments int, segmentId uint64, login string, messageId string) *SegmentToDatalinkLayer {
+	return &SegmentToDatalinkLayer{
+		Data: rawData,
+		SegmentId: segmentId,
+		NumberOfSegments: numberOfSegments,
+		DateSend: time.Now().UTC().Format(timestamptz),
+		Login: login,
+		MessageId: messageId,
+	}
 }

@@ -20,22 +20,3 @@ func SetupProducer(cfg *config.Project) (sarama.SyncProducer, error) {
     }
     return producer, nil
 }
-
-//SendKafkaMessage - function that sends message into topic in Kafka
-func SendKafkaMessage(producer sarama.SyncProducer, segment *dto.SegmentFromDatalinkLayer, cfg *config.Project) error {
-  segmentJSON, err := json.Marshal(segment)
-  if err != nil {
-    return err
-  }
-
-  msg := &sarama.ProducerMessage{
-      Topic: cfg.Kafka.Topic,
-      Value: sarama.StringEncoder(segmentJSON),
-  }
-
-  _, _, err = producer.SendMessage(msg)
-  if err != nil {
-    return err
-  }
-  return nil
-}
