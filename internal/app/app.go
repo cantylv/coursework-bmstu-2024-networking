@@ -21,7 +21,8 @@ import (
 //statuses of building message
 const (
 	InProgress = iota
-	Finished 
+	Collected
+	Cancelled 
 )
 
 type MessageBuilding struct {
@@ -43,6 +44,8 @@ func NewTransferServer (producer sarama.SyncProducer, logger *zap.Logger, cfg *c
 		producer: producer,
 		logger: logger,
 		cfg: cfg,
+		msgPipeline: map[string]MessageBuilding{},
+		mtx: &sync.RWMutex{},
 	}
 }
 
@@ -51,12 +54,12 @@ func DefineHadlers (mux *http.ServeMux, cfg *config.Project) {
 	logger := zap.Must(zap.NewDevelopment()) 
 	//initialization kafka producer 
 	producer, err := producer.SetupProducer(cfg)
-	defer func() {
-		err = producer.Close()
-		if err != nil {
-			logger.Error(err.Error())
-		}
-	} () 
+	// defer func() {
+	// 	err = producer.Close()
+	// 	if err != nil {
+	// 		logger.Error(err.Error())
+	// 	}
+	// } () 
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -67,6 +70,7 @@ func DefineHadlers (mux *http.ServeMux, cfg *config.Project) {
 
 	mux.HandleFunc("POST /api/v1/message", srv.Message)
 	mux.HandleFunc("POST /api/v1/segment", srv.Segment)
+	logger.Info("Successful definition of HTTP handlers")
 }
 
 //Message - receives dto.MessageFromAppLayer and splits message into segments and send them to Kafka (length is 100 bytes)
@@ -115,12 +119,12 @@ func (h *TransferServer) sendKafkaMessage(segment *dto.SegmentToDatalinkLayer) e
 	  return err
 	}
   
-	msg := &sarama.ProducerMessage{
+	msg := sarama.ProducerMessage{
 		Topic: h.cfg.Kafka.Topic,
 		Value: sarama.StringEncoder(segmentJSON),
 	}
 
-	_, _, err = h.producer.SendMessage(msg)
+	_, _, err = h.producer.SendMessage(&msg)
 	if err != nil {
 	  return err
 	}
@@ -159,7 +163,7 @@ func (h *TransferServer) Segment(w http.ResponseWriter, r *http.Request) {
 
 //tryToCollectMessage - receives segments and collects message
 func (h *TransferServer) tryToCollectMessage(segment dto.SegmentFromDatalinkLayer) {
-	if segment.Error != false {
+	if segment.Error {
 		return
 	}
     msgId := segment.MessageId
@@ -174,10 +178,11 @@ func (h *TransferServer) tryToCollectMessage(segment dto.SegmentFromDatalinkLaye
 		h.mtx.Unlock()
 		go h.collectMessage(msgId)
 	} else if messageState.status == InProgress {
+		h.mtx.RUnlock()
 		h.mtx.Lock()
 		h.msgPipeline[msgId] = MessageBuilding {
 			segments: append(h.msgPipeline[msgId].segments, segment),
-			status: InProgress,
+			status: h.msgPipeline[msgId].status,
 		}
 		h.mtx.Unlock()
 		sortNumbers(h.msgPipeline[msgId].segments)
@@ -198,14 +203,14 @@ func sortNumbers(segments []dto.SegmentFromDatalinkLayer) {
 
 //builds message max number of tries is h.cfg.Transfer.MaxNumberOfAttempts (default = 3) 
 func (h *TransferServer) collectMessage(msgId string) {
-	for i := 0; i < h.cfg.Transfer.MaxNumberOfAttempts && h.msgPipeline[msgId].status != Finished; i++ {
+	for i := 0; i < h.cfg.Transfer.MaxNumberOfAttempts && h.msgPipeline[msgId].status == InProgress; i++ {
 		ticker := make(chan bool)
 		go func(tickerChan chan bool) {
 			time.Sleep(h.cfg.Transfer.Timeout)
 			ticker <- true
 			close(ticker)
 		}(ticker)
-		var wg *sync.WaitGroup
+		var wg sync.WaitGroup
 		wg.Add(1)
 		go func(tickerChannel chan bool) {
 			defer wg.Done()
@@ -227,7 +232,6 @@ func (h *TransferServer) collectMessage(msgId string) {
 							rawMessage = append(rawMessage, msgSegments[j].Data...)
 						}
 						stringMessage := string(rawMessage)
-						h.logger.Info(stringMessage)
 						msg := &dto.MessageToAppLayer{
 							Message: stringMessage,
 							Login: h.msgPipeline[msgId].segments[0].Login,
@@ -238,7 +242,7 @@ func (h *TransferServer) collectMessage(msgId string) {
 						h.mtx.Lock()
 						h.msgPipeline[msgId] = MessageBuilding{
 							segments: msgSegments,
-							status: Finished,
+							status: Collected,
 						}
 						h.mtx.Unlock()
 						return
@@ -247,6 +251,12 @@ func (h *TransferServer) collectMessage(msgId string) {
 			}
 		}(ticker)
 		wg.Wait()
+	}
+	if h.msgPipeline[msgId].status == InProgress {
+		h.msgPipeline[msgId] = MessageBuilding{
+			segments: h.msgPipeline[msgId].segments,
+			status: Cancelled,
+		}
 	}
 }
 

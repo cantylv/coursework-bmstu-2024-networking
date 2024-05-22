@@ -1,12 +1,10 @@
 package producer
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/IBM/sarama"
 	"github.com/cantylv/coursework-bmstu-2024-networking/config"
-	"github.com/cantylv/coursework-bmstu-2024-networking/internal/entity/dto"
 )
 
 //SetupProduces - function that creates new produces for Apache Kafka Cluster

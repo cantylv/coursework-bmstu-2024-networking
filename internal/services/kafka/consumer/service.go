@@ -25,20 +25,19 @@ func InitDemon(cfgProject *config.Project) {
     if err != nil {
         logs.Fatal(err.Error())
     }
-    demonEngine := &DemonFunction{
+    demonEngine := DemonFunction{
         consumer: cons,
         logger: logs,
         cfg: cfgProject,
     }
-    var wg *sync.WaitGroup
+    var wg sync.WaitGroup
     wg.Add(1)
-    go demonEngine.SendSegmentToDatalinkLayer(wg)
+    go demonEngine.SendSegmentToDatalinkLayer(&wg)
     wg.Wait()
 }
 
 func setupConsumer(cfg *config.Project) (sarama.Consumer, error){
     config := sarama.NewConfig()
-
 	kafkaAddress := fmt.Sprintf("%s:%d", cfg.Kafka.Host, cfg.Kafka.Port)
     consumer, err := sarama.NewConsumer([]string{kafkaAddress}, config)
     if err != nil {
@@ -57,8 +56,8 @@ func (d *DemonFunction) SendSegmentToDatalinkLayer(wgParent *sync.WaitGroup) {
         d.logger.Fatal(err.Error())
         return
     }
-    var wg *sync.WaitGroup
-    //channel to stop goroutines
+    var wg sync.WaitGroup
+    //channels to stop goroutines
     doneChannels := make([]chan bool, len(partitions))
     for index, partition := range partitions {
         partitionConsumer, err := d.consumer.ConsumePartition(d.cfg.Kafka.Topic, partition, sarama.OffsetNewest)
@@ -68,7 +67,7 @@ func (d *DemonFunction) SendSegmentToDatalinkLayer(wgParent *sync.WaitGroup) {
         }
         doneChannels[index] = make(chan bool)
         wg.Add(1)
-        go d.getSegmentOfMessage(partitionConsumer, segmentChannel, doneChannels[index], wg)
+        go d.getSegmentOfMessage(partitionConsumer, segmentChannel, doneChannels[index], &wg)
         defer func(chanDone chan bool, chanIndex int) {
             chanDone <- true
         }(doneChannels[index], index)
