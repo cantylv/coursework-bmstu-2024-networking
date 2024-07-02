@@ -1,0 +1,23 @@
+# x, y, z - IP addreses of students's hosts
+datalink:
+  host: 192.168.1.x
+  port: 8000
+  request_url: /api/v1/segment_processing
+
+transfer:
+  host: 192.168.1.y
+  port: 8000
+  timeout: 5
+  segment_length: 100
+  max_number_of_attempts: 3
+
+application:
+  host: 192.168.1.z
+  port: 3000
+  request_url: /api/v1/message
+
+kafka:
+  host: 127.0.0.1
+  port: 9092
+  topic: segments
+

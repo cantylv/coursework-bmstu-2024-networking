@@ -15,15 +15,15 @@ import (
 // а при сегментации (соответствовать Congestion Control TCP)
 
 func main() {
-	//initialization logger 
-	logger := zap.Must(zap.NewDevelopment()) 
+	//initialization logger
+	logger := zap.Must(zap.NewDevelopment())
 	//initialization multiplexor
 	mux := http.NewServeMux()
-	//reading config 
+	//reading config
 	cfgProject := config.NewConfig(logger)
 	//definition of handlers
 	app.DefineHadlers(mux, cfgProject)
-	//initializes goroutines which work with Kafka 
+	//initializes goroutines which work with Kafka
 	go consumer.InitDemon(cfgProject)
-	logger.Fatal(http.ListenAndServe(":" + strconv.Itoa(cfgProject.Transfer.Port), mux).Error())
+	logger.Fatal(http.ListenAndServe(":"+strconv.Itoa(cfgProject.Transfer.Port), mux).Error())
 }
